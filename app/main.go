@@ -3,10 +3,13 @@ package main
 import (
 	"bytes"
 	"compress/zlib"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 func main() {
@@ -65,7 +68,40 @@ func main() {
 			panic(err)
 		}
 		data = extractContent(data);
-		fmt.Print(string(data));
+		fmt.Print(string(data))
+	case "hash-object" : 
+
+		readFlag := os.Args[2];
+
+		if(readFlag != "-w") {
+			fmt.Println("please pass -w flag to generate sha and write the object content");
+		}
+
+		filePath := os.Args[3];
+
+		f,err := os.ReadFile(filePath); if err != nil {
+			panic(err);
+		}
+		contentLength := []byte(strconv.Itoa(len(f)));
+		//"blob "
+		blob := []byte {98, 108, 111, 98, 32};
+		content := append(blob,contentLength...);
+		content =  append(content,0);
+		content = append(content,f...);
+		shaObject := sha1.New();	
+		shaObject.Write(content);
+		generatedHash := hex.EncodeToString(shaObject.Sum(nil));
+		currDir, err := os.Getwd(); if err != nil {
+			panic(err);
+		}
+		filePath = getRepoRootDir(currDir);
+		subDir := generatedHash[:2];
+		fileName := generatedHash[2:];
+		filePath = filepath.Join(filePath,".git/objects",subDir,fileName);
+		writeFileErr := os.WriteFile(filePath,content,0644); if writeFileErr != nil {
+			panic(writeFileErr);
+		}
+		fmt.Print(generatedHash);
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
 		os.Exit(1)
@@ -75,13 +111,13 @@ func main() {
 func extractContent(data []byte) []byte {
 	i := len("blob ");
 	for ;i < len(data); i++ {
-	if data[i] == 0 {
+		if data[i] == 0 {
 			i++;
-		break;
+			break;
 		}
 	}
 
-return data[i:];
+	return data[i:];
 }
 
 func getRepoRootDir(directoryPath string) string{
@@ -89,7 +125,7 @@ func getRepoRootDir(directoryPath string) string{
 	if rootDir == "" {
 		rootDir = "/";
 	} else{
-	rootDir += filepath.Join(rootDir,"");
+		rootDir += filepath.Join(rootDir,"");
 	}
 	if directoryPath == rootDir {
 		fmt.Println("fatal: not a git repository (or any of the parent directories): .git");
