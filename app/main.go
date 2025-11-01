@@ -101,8 +101,12 @@ func main() {
 		dir := filepath.Dir(filePath); 
 		err = os.MkdirAll(dir,0755); if err != nil {
 			panic(err);
-		} 
-		writeFileErr := os.WriteFile(filePath,content,0644); if writeFileErr != nil {
+		}
+		var buffer bytes.Buffer; 
+		w := zlib.NewWriter(&buffer);
+		w.Write(content);
+		w.Close();
+		writeFileErr := os.WriteFile(filePath,buffer.Bytes() ,0644); if writeFileErr != nil {
 			panic(writeFileErr);
 		}
 		fmt.Print(generatedHash);
