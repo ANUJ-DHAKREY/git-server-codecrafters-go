@@ -98,6 +98,10 @@ func main() {
 		subDir := generatedHash[:2];
 		fileName := generatedHash[2:];
 		filePath = filepath.Join(filePath,".git/objects",subDir,fileName);
+		dir := filepath.Dir(filePath); 
+		err = os.MkdirAll(dir,0755); if err != nil {
+			panic(err);
+		} 
 		writeFileErr := os.WriteFile(filePath,content,0644); if writeFileErr != nil {
 			panic(writeFileErr);
 		}
